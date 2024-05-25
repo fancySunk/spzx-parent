@@ -34,11 +34,11 @@ public class SysUserServiceImpl implements SysUserService {
     public LoginVo login(LoginDto loginDto) {
         //获取loginDto中的验证码key值，拿key去查询redis中的验证码值是否一致，一致再进行登录验证操作
         String codeKey = loginDto.getCodeKey();
-        String codeValue = redisTemplate.opsForValue().get("user:login:validateCode"+codeKey);
-        if (StrUtil.isEmpty(codeValue)||!StrUtil.equalsAnyIgnoreCase(codeValue,loginDto.getCaptcha())){
+        String codeValue = redisTemplate.opsForValue().get("user:login:validateCode" + codeKey);
+        if (StrUtil.isEmpty(codeValue) || !StrUtil.equalsAnyIgnoreCase(codeValue, loginDto.getCaptcha())) {
             throw new GuiguException(ResultCodeEnum.VALIDATECODE_ERROR);
         }
-        redisTemplate.delete("user:login:validateCode"+codeKey);
+        redisTemplate.delete("user:login:validateCode" + codeKey);
 
         //1 获取提交的用户名，loginDto中获取
         String userName = loginDto.getUserName();
@@ -58,13 +58,19 @@ public class SysUserServiceImpl implements SysUserService {
         }
         //6 一致，登录成功，反之失败
         //7 登录成功生成token
-        String token= UUID.randomUUID().toString().replaceAll("-", "");
+        String token = UUID.randomUUID().toString().replaceAll("-", "");
         //8 把token和用户信息放入redis中
-        redisTemplate.opsForValue().set("user:login"+token, JSON.toJSONString(sysUser),7, TimeUnit.DAYS);
+        redisTemplate.opsForValue().set("user:login" + token, JSON.toJSONString(sysUser), 7, TimeUnit.DAYS);
         //9 返回loginVo对象
         LoginVo loginVo = new LoginVo();
         loginVo.setToken(token);
         return loginVo;
+    }
+
+    @Override
+    public SysUser getUserInfo(String token) {
+        String userJson = redisTemplate.opsForValue().get("user:login" + token);
+        return JSON.parseObject(userJson, SysUser.class);
     }
 }
 
